@@ -6,6 +6,115 @@ from helpers import Where, UnknownOperatorError, RegExp
 import unittest
 
 
+class TupleTestCas(unittest.TestCase):
+
+    def test_constructor(self):
+        self.assertTupleEqual(tuple('abcd'), ('a', 'b', 'c', 'd'))
+        self.assertTupleEqual(tuple(tuple('abcd')), ('a', 'b', 'c', 'd'))
+        self.assertTupleEqual(tuple('a', 'b', 'c', 'd'), ('a', 'b', 'c', 'd'))
+
+    def test_filter(self):
+        l = tuple('abc')
+        self.assertEqual(type(l.filter()), tuple)
+        self.assertEqual(l.filter(), ('a', 'b', 'c'))
+        self.assertEqual(l.filter(f=lambda x: x != 'b'), ('a', 'c'))
+        self.assertEqual(l, ('a', 'b', 'c'))
+
+
+class ListTestCase(unittest.TestCase):
+
+    def test_constructor(self):
+        self.assertListEqual(list('abcd'), ['a', 'b', 'c', 'd'])
+        self.assertListEqual(list(list('abcd')), ['a', 'b', 'c', 'd'])
+        self.assertListEqual(list('a', 'b', 'c', 'd'), ['a', 'b', 'c', 'd'])
+
+    def test_append_extend(self):
+        l = list('ab')
+        self.assertListEqual(l.append('c').extend('de'), ['a', 'b', 'c', 'd', 'e'])
+        self.assertListEqual(l, ['a', 'b', 'c', 'd', 'e'])
+
+    def test_insert(self):
+        l = list('ab')
+        self.assertListEqual(l.insert(0, 'x'), ['x', 'a', 'b'])
+        self.assertListEqual(l.insert(-1, 'y'), ['x', 'a', 'b', 'y'])
+
+    def test_remove(self):
+        l = list('abc')
+        self.assertListEqual(l.remove('a'), ['b', 'c'])
+        self.assertListEqual(l, ['b', 'c'])
+        self.assertRaises(ValueError, l.remove, 'a')
+
+    def test_remove_all(self):
+        l = list('abc')
+        self.assertListEqual(l.remove_all('ac'), ['b'])
+        self.assertListEqual(l, ['b'])
+        self.assertRaises(ValueError, l.remove_all, 'bc')
+
+    def test_discard(self):
+        l = list('abc')
+        self.assertListEqual(l.discard('a'), ['b', 'c'])
+        self.assertListEqual(l, ['b', 'c'])
+        self.assertListEqual(l.discard('a'), ['b', 'c'])
+
+    def test_discard_all(self):
+        l = list('abc')
+        self.assertListEqual(l.discard_all('ac'), ['b'])
+        self.assertListEqual(l, ['b'])
+        self.assertListEqual(l.discard_all('ac'), ['b'])
+
+    def test_add(self):
+        self.assertListEqual(list('ab') + 'cd', ['a', 'b', 'c', 'd'])
+
+    def test_iadd(self):
+        l = list('ab')
+        l += 'cd'
+        self.assertListEqual(l, ['a', 'b', 'c', 'd'])
+
+    def test_sub(self):
+        l = list('abcd')
+        self.assertListEqual(l - 'cd', ['a', 'b'])
+        self.assertListEqual(l - 'cx', ['a', 'b', 'd'])
+        self.assertListEqual(l, ['a', 'b', 'c', 'd'])
+
+    def test_isub(self):
+        l = list('abcd')
+        l -= 'cd'
+        self.assertListEqual(l, ['a', 'b'])
+        l = list('abcd')
+        l -= 'cx'
+        self.assertListEqual(l, ['a', 'b', 'd'])
+
+    def test_all_none(self):
+        l1 = list((None, None, None))
+        l2 = list((None, None, False))
+        self.assertTrue(l1.all(f=lambda x: x is None))
+        self.assertFalse(l2.all(f=lambda x: x is None))
+
+    def test_any_none(self):
+        l1 = list((False, True, 0))
+        l2 = list((0, None, False))
+        self.assertFalse(l1.any(f=lambda x: x is None))
+        self.assertTrue(l2.any(f=lambda x: x is None))
+
+    def test_get(self):
+        l = list('abc')
+        self.assertEqual(l.get(1), 'b')
+        self.assertIsNone(l.get(10))
+        self.assertEqual(l.get(-10, 'out'), 'out')
+
+    def test_filter(self):
+        l = list('abc')
+        self.assertEqual(type(l.filter()), list)
+        self.assertEqual(l.filter(), ['a', 'b', 'c'])
+        self.assertEqual(l.filter(f=lambda x: x != 'b'), ['a', 'c'])
+        self.assertEqual(l, ['a', 'b', 'c'])
+
+    def test_reduce(self):
+        l = list('this is rich in "i"')
+        self.assertEqual(l.count(f=lambda x: x == 'i'), 5)
+        self.assertEqual(l.count(f=lambda x: x == ' '), 4)
+
+
 class DictTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -146,8 +255,9 @@ class DictTestCase(unittest.TestCase):
 
     def test_filter(self):
         d = dict(self.d)
-        self.assertEqual(set(d.filter()), set('abcd'))
-        self.assertEqual(set(d.filter(f=lambda x: x != 'a')), set('bcd'))
+        self.assertEqual(type(d.filter()), dict.iterable)
+        self.assertEqual(d.filter(), set('abcd'))
+        self.assertEqual(d.filter(f=lambda x: x != 'a'), set('bcd'))
         self.assertDictEqual(d, self.d)
 
     def test_filter_dict(self):
@@ -157,138 +267,12 @@ class DictTestCase(unittest.TestCase):
         self.assertDictEqual(d, self.d)
 
 
-class ListTestCase(unittest.TestCase):
-
-    def test_constructor(self):
-        self.assertListEqual(list('abcd'), ['a', 'b', 'c', 'd'])
-        self.assertListEqual(list(list('abcd')), ['a', 'b', 'c', 'd'])
-
-    def test_append_extend(self):
-        l = list('ab')
-        self.assertListEqual(l.append('c').extend('de'), ['a', 'b', 'c', 'd', 'e'])
-        self.assertListEqual(l, ['a', 'b', 'c', 'd', 'e'])
-
-    def test_insert(self):
-        l = list('ab')
-        self.assertListEqual(l.insert(0, 'x'), ['x', 'a', 'b'])
-        self.assertListEqual(l.insert(-1, 'y'), ['x', 'a', 'b', 'y'])
-
-    def test_remove(self):
-        l = list('abc')
-        self.assertListEqual(l.remove('a'), ['b', 'c'])
-        self.assertRaises(ValueError, l.remove, 'a')
-
-    def test_remove_all(self):
-        l = list('abc')
-        self.assertListEqual(l.remove_all('ac'), ['b'])
-        self.assertRaises(ValueError, l.remove_all, 'bc')
-
-    def test_discard(self):
-        l = list('abc')
-        self.assertListEqual(l.discard('a'), ['b', 'c'])
-        self.assertListEqual(l.discard('a'), ['b', 'c'])
-
-    def test_discard_all(self):
-        l = list('abc')
-        self.assertListEqual(l.discard_all('ac'), ['b'])
-        self.assertListEqual(l.discard_all('ac'), ['b'])
-
-    def test_add(self):
-        self.assertListEqual(list('ab') + 'cd', ['a', 'b', 'c', 'd'])
-
-    def test_iadd(self):
-        l = list('ab')
-        l += 'cd'
-        self.assertListEqual(l, ['a', 'b', 'c', 'd'])
-
-    def test_sub(self):
-        self.assertListEqual(list('abcd') - 'cd', ['a', 'b'])
-        self.assertListEqual(list('abcd') - 'cx', ['a', 'b', 'd'])
-
-    def test_isub(self):
-        l = list('abcd')
-        l -= 'cd'
-        self.assertListEqual(l, ['a', 'b'])
-        l = list('abcd')
-        l -= 'cx'
-        self.assertListEqual(l, ['a', 'b', 'd'])
-
-    def test_all_none(self):
-        l1 = list((None, None, None))
-        l2 = list((None, None, False))
-        self.assertEqual(l1.all(f=lambda x: x is None), True)
-        self.assertEqual(l2.all(f=lambda x: x is None), False)
-
-    def test_get(self):
-        l = list('abc')
-        self.assertEqual(l.get(1), 'b')
-        self.assertIsNone(l.get(10))
-        self.assertEqual(l.get(-10, 'out'), 'out')
-
-
 class SetTestCase(unittest.TestCase):
 
     def test_constructor(self):
         self.assertSetEqual(set('abcd'), set(['a', 'b', 'c', 'd']))
         self.assertSetEqual(set(set('abcd')), set(['a', 'b', 'c', 'd']))
-
-
-class WhereTestCase(unittest.TestCase):
-
-    def setUp(self):
-        self.data = dict(
-            name='toto',
-            age='12',
-        )
-
-    def test_unknown_operator(self):
-        self.assertRaises(UnknownOperatorError, Where, name__operator=0)
-
-    def test_equal(self):
-        data = self.data
-        where = Where(name='toto', age=12)
-        self.assertTrue(where(data))
-        data['age'] = 12
-        self.assertTrue(where(data))
-        data['name'] = 'zorro'
-        self.assertFalse(where(data))
-        where = Where(name__neq='toto', age=12)
-        self.assertTrue(where(data))
-
-    def test_iequal(self):
-        data = self.data.replace(name='TOTO')
-        where = Where(name__ieq='toto', age=12)
-        self.assertTrue(where(data))
-        where = Where(name__ineq='toto', age=12)
-        self.assertFalse(where(data))
-
-    def test_contains(self):
-        data = self.data
-        where = Where(name__contains='to', age=12)
-        self.assertTrue(where(data))
-
-    def tetst_gt(self):
-        data = self.data
-        where = Where(name='toto', age__gt=10)
-        self.assertTrue(where(data))
-        where = Where(name='toto', age__gt=18)
-        self.assertFalse(where(data))
-
-    def test_inrange(self):
-        data = self.data
-        where = Where(name='toto', age__inrange=(10, 13))
-        self.assertTrue(where(data))
-        where = Where(name='toto', age__inrange=(10, 12))
-        self.assertFalse(where(data))
-
-    def test_missing_key(self):
-        data = self.data
-        where = Where(name='toto', value__inrange=(10, 13))
-        self.assertFalse(where(data))
-        where = Where(name='toto', value__inrange=(10, 13), _key_missing_=True)
-        self.assertTrue(where(data))
-        where = Where(name='toto', value__inrange=(10, 13), _key_missing_=None)
-        self.assertRaises(KeyError, where, data)
+        self.assertSetEqual(set('a', 'b', 'c', 'd'), set(['a', 'b', 'c', 'd']))
 
 
 class RegExpTestCase(unittest.TestCase):
@@ -301,6 +285,101 @@ class RegExpTestCase(unittest.TestCase):
         re = RegExp('\d', match=True)
         self.assertFalse(re('xx10xx'))
         self.assertTrue(re('10xx'))
+
+
+class WhereTestCase(unittest.TestCase):
+
+    def setUp(self):
+        self.data = dict(
+            name='abcdef',
+            age='12',
+        )
+
+    def test_unknown_operator(self):
+        self.assertRaises(UnknownOperatorError, Where, name__operator=0)
+
+    def test_equal(self):
+        data = self.data
+        where = Where(name='abcdef', age=12)
+        self.assertTrue(where(data))
+        data['age'] = 12
+        self.assertTrue(where(data))
+        data['name'] = 'zorro'
+        self.assertFalse(where(data))
+        where = Where(name__neq='abcdef', age=12)
+        self.assertTrue(where(data))
+
+    def test_iequal(self):
+        data = self.data.replace(name='ABCDEF')
+        where = Where(name__ieq='abcdef', age=12)
+        self.assertTrue(where(data))
+        where = Where(name__nieq='abcdef', age=12)
+        self.assertFalse(where(data))
+
+    def test_contains(self):
+        data = self.data
+        where = Where(name__contains='bcd', age=12)
+        self.assertTrue(where(data))
+        where = Where(name__notcontains='bcd', age=12)
+        self.assertFalse(where(data))
+
+    def test_icontains(self):
+        data = self.data.replace(name='ABCDEF')
+        where = Where(name__icontains='bcd', age=12)
+        self.assertTrue(where(data))
+        where = Where(name__noticontains='bcd', age=12)
+        self.assertFalse(where(data))
+
+    def test_startswith(self):
+        data = self.data
+        where = Where(name__start='abc', age=12)
+        self.assertTrue(where(data))
+        where = Where(name__nstart='abc', age=12)
+        self.assertFalse(where(data))
+
+    def test_istartswith(self):
+        data = self.data.replace(name='ABCDEF')
+        where = Where(name__istart='abc', age=12)
+        self.assertTrue(where(data))
+        where = Where(name__nistart='abc', age=12)
+        self.assertFalse(where(data))
+
+    def tetst_gt(self):
+        data = self.data
+        where = Where(name='abcdef', age__gt=10)
+        self.assertTrue(where(data))
+        where = Where(name='abcdef', age__gt=18)
+        self.assertFalse(where(data))
+
+    def test_inrange(self):
+        data = self.data
+        where = Where(name='abcdef', age__inrange=(10, 13))
+        self.assertTrue(where(data))
+        where = Where(name='abcdef', age__inrange=(10, 12))
+        self.assertFalse(where(data))
+
+    def test_missing_key(self):
+        data = self.data
+        where = Where(name='abcdef', value__inrange=(10, 13))
+        self.assertFalse(where(data))
+        where = Where(name='abcdef', value__inrange=(10, 13), _key_missing_=True)
+        self.assertTrue(where(data))
+        where = Where(name='abcdef', value__inrange=(10, 13), _key_missing_=None)
+        self.assertRaises(KeyError, where, data)
+
+    def test_or(self):
+        data = self.data
+        where = Where({'name': 'abcdef'}, {'age': 13})
+        self.assertTrue(where(data))
+        where = Where({'name': 'toto'}, {'age': 12})
+        self.assertTrue(where(data))
+
+    def test_regexp(self):
+        data = self.data.replace(age='xx10xx')
+        where = Where(name='abcdef', age__search='\d')
+        self.assertTrue(where(data))
+        where = Where(name='abcdef', age__match='\d')
+        self.assertFalse(where(data))
 
 
 if __name__ == '__main__':
