@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
 
-# TODO
-# tester différentes implémentations (speed) ex: set.contains_all iterator vs set arithmetic
-# éventuellement mettre 2 implémentations avec un test (comme dict.__and__)
-# design a purely immutable dict class with history stored in deque
-# voir lodash.js pour d'autres idées, voir https://pythonhosted.org/pysistence/
-# tester en python 2 et python 3
-
+from helpers import add_attribute_self, yesman
 from collections import defaultdict, Iterable
-from bisect import bisect_left
 from operator import add
 
 from version import __version__
@@ -69,13 +62,22 @@ class FilterMixin(object):
     # immutable methods (return another self)
 
     def filter(self, f=bool, negate=False):
-        """ Returns a copy of self, retaining elements that satisfy f.
+        """ Returns a copy of self, only retaining elements that satisfy f.
         """
         cls = getattr(self, 'iterable', self.__class__)
         if negate:
             return cls(x for x in self if not f(x))
         else:
             return cls(x for x in self if f(x))
+
+    def filter_index(self, f=yesman, negate=False):
+        """ Returns a copy of self, only retaining index/elements pairs that satisfy f.
+        """
+        cls = getattr(self, 'iterable', self.__class__)
+        if negate:
+            return cls(x for i, x in enumerate(self) if not f(i, x))
+        else:
+            return cls(x for i, x in enumerate(self) if f(i, x))
 
     # helper methods (return a value)
 
@@ -102,25 +104,25 @@ class FilterMixin(object):
         return any(f(x) for x in self)
 
     def contains_all(self, iterable):
-        """ True if every element of iterable is a key of self
+        """ True if every element (or key) of iterable is in self
             use preferably if self.__contains__() evaluates in constant time
         """
         return all(i in self for i in iterable)
 
     def contains_any(self, iterable):
-        """ True if any element of iterable is a key of self
+        """ True if any element (or key) of iterable is in self
             use preferably if self.__contains__() evaluates in constant time
         """
         return any(i in self for i in iterable)
 
     def all_in(self, container):
-        """ True if all keys of self are also in container
+        """ True if all elements (or keys) of self are also in container
             use preferably if container.__contains__() evaluates in constant time
         """
         return all(i in container for i in self)
 
     def any_in(self, container):
-        """ True if any key of self are also in container
+        """ True if any element (or key) of self are also in container
             use preferably if container.__contains__() evaluates in constant time
         """
         return any(i in container for i in self)
@@ -134,7 +136,9 @@ class FilterMixin(object):
     count = reduce
 
 
+@add_attribute_self('iterable')
 class ftuple(FilterMixin, tuple):
+    # Fixme: optimize all_in, any_in (use a cached set ?)
     """
     Replacement class for tuple, with better API and many useful methods.
     Many new methods have been added, they are classified as immutable, muttable and helpers
@@ -143,14 +147,25 @@ class ftuple(FilterMixin, tuple):
 
     def __new__(cls, *args):
         """ Replacement constructor, Python API is not coherent:
-            dict() admits a dict or **kwarsgs, so tuple() should admit an iterable or *args
+            dict() admits a dict or **kwargs, so tuple() should admit an iterable or *args
         """
         if len(args) == 1 and isinstance(args[0], Iterable):
             return tuple.__new__(cls, args[0])
         else:
             return tuple.__new__(cls, args)
 
+    def __sub__(self, other):
+        """ Returns a copy of self with element elem removed
+        """
+        pass
 
+    def sub_index(self, index):
+        """ Returns a copy of self with element @index removed
+        """
+        pass
+
+
+@add_attribute_self('iterable')
 class flist(FilterMixin, list):
     """
     Replacement class for list, with better API and many useful methods.
@@ -161,7 +176,7 @@ class flist(FilterMixin, list):
 
     def __init__(self, *args):
         """ Replacement constructor, Python API is not coherent:
-            dict() admits a dict or **kwarsgs, so list() should admit an iterable or *args
+            dict() admits a dict or **kwargs, so list() should admit an iterable or *args
         """
         if len(args) == 1 and isinstance(args[0], Iterable):
             list.__init__(self, args[0])
@@ -211,6 +226,14 @@ class flist(FilterMixin, list):
             list.remove(self, i)
         return self
 
+    def remove_slice(self, start=None, end=None):
+        # best way to specify a slice in args
+        # use filter_index ?
+        pass
+
+    def discard_slice(self, start=None, end=None):
+        pass
+
     def discard(self, value):
         """ Like remove except it does not raise ValueError exception
         """
@@ -254,49 +277,71 @@ class flist(FilterMixin, list):
         """
         return flist(self).discard_all(iterable)
 
-    # helper methods (return a value)
 
-    def get(self, pos, default=None):
-        """ Equivalent of dict.get for list: returns a default value if index is out of range
-        """
-        try:
-            return self[pos]
-        except IndexError:
-            return default
+@add_attribute_self('iterable')
+class fset(FilterMixin, set):
+    # Fixme: complete methods set
+    # Fixme: draw a table of features (adding, removing, etc) with method names for mutable and immutable
+    """
+    Replacement class for set, with better API and many useful methods.
+    In place methods return 'self' instead of None, better for chaining and returning.
+    Many new methods have been added, they are classified as immutable, muttable and predicates.
+    """
+    root = set
 
-    def index_b(self, value, start=0, stop=None):
-        """ Performs binary search on sorted lists
+    def __init__(self, *args):
+        """ Replacement constructor, Python API is not coherent:
+            dict() admits a dict or **kwargs, so set() should admit an iterable or *args
         """
-        if stop is None:
-            stop = len(self)
-        i = bisect_left(self, value, start, stop)
-        if i < len(self) and self[i] == value:
-            return i
-        return -1
-
-    def index_f(self, start=0, f=bool, negate=False):
-        """ Returns the index of the first element that satisfies f
-        """
-        if negate:
-            for i in xrange(start, len(self)):
-                if not f(self[i]):
-                    return i
-            return -1
+        if len(args) == 1 and isinstance(args[0], Iterable):
+            set.__init__(self, args[0])
         else:
-            for i in xrange(start, len(self)):
-                if f(self[i]):
-                    return i
-            return -1
+            set.__init__(self, args)
+
+    # mutable methods (return self)
+
+    def add(self, item):
+        set.add(item)
+        return self
+
+    def clear(self):
+        set.clear(self)
+        return self
+
+    def update(self, iterable):
+        set.update(self, iterable)
+        return self
+
+    def remove(self, item):
+        set.remove(self, item)
+        return self
+
+    def discard(self, item):
+        set.discard(self, item)
+        return self
+
+    __iadd__ = __ior__ = update
+
+    # immutable methods (return another set)
+
+    def __add__(self, iterable):
+        return fset(self).update(iterable)
+
+    def __sub__(self, iterable):
+        return fset(self)
+
+    __or__ = __add__
 
 
 class fdict(FilterMixin, dict):
     """
     Replacement class for dict, with better API and many useful methods.
-    In place methods return 'self' instead of None, better for chaining and returning
-    Many new methods have been added, they are classified as immutable, muttable and helpers
+    In place methods return 'self' instead of None, better for chaining and returning.
+    Many new methods have been added, they are classified as immutable, muttable and helpers.
     """
     root = dict
     __default_value__ = None
+    iterable = fset
 
     # mutable methods (return self)
 
@@ -310,7 +355,7 @@ class fdict(FilterMixin, dict):
         dict.update(self, E, **F)
         return self
 
-    replace = update
+    replace = update  # updating an existing key does a replacement, so this alias
 
     def update_difference(self, mapping):
         """ Like update except that only new keys will be updated
@@ -369,14 +414,6 @@ class fdict(FilterMixin, dict):
 
     # immutable methods (return another dict)
 
-    def filter_dict(self, f=ftuple, negate=False):
-        """ Returns a copy of self filtered by f(key, value)
-        """
-        if negate:
-            return fdict((k, v) for k, v in self.iteritems() if not f(k, v))
-        else:
-            return fdict((k, v) for k, v in self.iteritems() if f(k, v))
-
     def reverse(self, duplicate=None):
         """ reverse the dictionary (exchange keys and values)
             what's happening to duplicate values ?
@@ -422,47 +459,3 @@ class fdict(FilterMixin, dict):
 
     __or__ = __add__
     __mul__ = __and__
-
-
-class fset(FilterMixin, set):
-    # Fixme: complete methods set
-    """
-    Replacement class for set
-    In place methods return 'self' instead of None
-    - __iadd__: accepts any iterable, not only lists
-    """
-    root = set
-
-    def __init__(self, *args):
-        """ Replacement constructor, Python API is not coherent:
-            dict() admits a dict or **kwarsgs, so set() should admit an iterable or *args
-        """
-        if len(args) == 1 and isinstance(args[0], Iterable):
-            set.__init__(self, args[0])
-        else:
-            set.__init__(self, args)
-
-    # mutable methods (return self)
-
-    def add(self, item):
-        set.add(item)
-        return self
-
-    def clear(self):
-        set.clear(self)
-        return self
-
-    def update(self, iterable):
-        set.update(self, set(iterable))
-        return self
-
-    __iadd__ = __ior__ = update
-
-    # immutable methods (return another set)
-
-    def __or__(self, iterable):
-        return fset(self).update(iterable)
-
-    __add__ = __or__
-
-fdict.iterable = fset

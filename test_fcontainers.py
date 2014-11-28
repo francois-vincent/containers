@@ -2,7 +2,7 @@
 
 from replacement import *
 from fcontainers import DuplicateValueError
-from helpers import Where, UnknownOperatorError, RegExp
+from predicates import Where, UnknownOperatorError, RegExp
 import unittest
 
 
@@ -373,6 +373,8 @@ class WhereTestCase(unittest.TestCase):
         self.assertTrue(where(data))
         where = Where({'name': 'toto'}, {'age': 12})
         self.assertTrue(where(data))
+        where = Where({'name': 'toto'}, {'age': 13})
+        self.assertFalse(where(data))
 
     def test_regexp(self):
         data = self.data.replace(age='xx10xx')

@@ -1,0 +1,52 @@
+
+TODO
+
+redéfinir les classes avec attributs + méthodes + comportement (séquence, set, mapping, etc)
+ + API python (getattr, type, getitem)
+
+ajouter collection.Count() dans un mixin
+
+tester en python 2 et python 3
+tester différentes implémentations (speed) ex: set.contains_all iterator vs set arithmetic
+éventuellement mettre 2 implémentations avec un test (comme dict.__and__)
+faire des tests de compatibilité des API.
+faire un module benchmark qui compare les vitesses d'exécution avec buitins et entre algos
+
+voir lodash.js pour d'autres idées, voir https://pythonhosted.org/pysistence/
+voir pip search containers
+voir linq: http://en.wikipedia.org/wiki/Language_Integrated_Query
+http://dev-tricks.net/pipe-infix-syntax-for-python
+https://github.com/JulienPalard/Pipe/blob/master/pipe.py
+
+faire un container avec la même API que fdict mais avec attributs plutôt que items (fobject)
+add an immutable dict (as tuple is an immutable list) see collections.Mapping
+design another immutable dict class with history stored in deque
+add a string replacement with useful methods
+
+find a name for methods that return a single value (helpers, predicates, scalars
+
+separate mixins and create a mixin factory, possibly through decorator (works for immutable classes ?)
+http://stackoverflow.com/questions/9087072/how-do-i-create-a-mixin-factory-in-python
+http://stackoverflow.com/questions/4828080/how-to-make-an-immutable-object-in-python
+can be useful for example to add a set cache to tuple
+or to compose your mixin mixture
+ce qui permettrait par exemple de modifier l'API de defaultdict (objectf majeur)
+--> repenser tout ça pour faire des mixin et mixin factory
+
+remplacer fdict.iterable = fset par un beau déco, idem pour tous les autres, tester
+
+envisager la possibilité de modifier les containers au niveau process, tester avec une grosse appli
+genre fluffy.
+
+pb: un slice de alist a le type list.
+
+
+Tests
+fdict: test iadd and default_value
+montrer la différence d'API dans les tests
+
+comment faire pour que super() soit compatible py2-py3
+
+pour chaque classe, faire la liste des méthodes d'origine, et des changements d'API pour chaque mixin
+
+tester la sérialization (pickle, JSON) (voir méthode __getnewargs__ de tuple)
